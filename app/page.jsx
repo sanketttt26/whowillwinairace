@@ -144,9 +144,9 @@ export default class Page extends Component {
       const blob = await this.drawCard(pick.name.toUpperCase(), page, this.rec());
       this.dropShare();
       this.setState({ sharing: false, shareUrl: URL.createObjectURL(blob) });
-      const file = new File([blob], 'whowillwinairace-record.png', { type: 'image/png' });
+      const file = new File([blob], 'whowillwintheairace-record.png', { type: 'image/png' });
       if (navigator.canShare && navigator.canShare({ files: [file] })) {
-        try { await navigator.share({ files: [file], text: this.shareText(pick.name) + '\n\nwhowillwinairace.com' }); } catch (_) { /* cancelled or blocked: the download + X links below still work */ }
+        try { await navigator.share({ files: [file], text: this.shareText(pick.name) + '\n\nwhowillwintheairace.com' }); } catch (_) { /* cancelled or blocked: the download + X links below still work */ }
       }
     } catch (_) {
       this.setState({ sharing: false });
@@ -171,7 +171,7 @@ export default class Page extends Component {
     x.strokeStyle = 'rgba(32,32,32,0.22)'; x.lineWidth = 1; x.strokeRect(80.5, 56.5, 1039, 562);
     const L = 136, R = 1064;
     x.textBaseline = 'alphabetic';
-    x.fillStyle = '#202020'; x.font = '500 19px ' + MONO; x.fillText('WHOWILLWINAIRACE.COM', L, 122);
+    x.fillStyle = '#202020'; x.font = '500 19px ' + MONO; x.fillText('WHOWILLWINTHEAIRACE.COM', L, 122);
     x.font = '500 15px ' + MONO;
     const lab = 'TOP SECRET · EYES ONLY', lw = x.measureText(lab).width;
     x.fillStyle = '#BF2E2A'; x.fillText(lab, R - lw - 12, 120);
@@ -200,7 +200,7 @@ export default class Page extends Component {
     x.fillStyle = 'rgba(32,32,32,0.25)'; x.fillRect(L, 532, R - L, 1);
     x.fillStyle = '#202020'; x.font = 'italic 32px ' + SERIF; x.fillText(r.tag, L, 580, 680);
     x.fillStyle = '#6B6863'; x.font = '400 15px ' + MONO;
-    const u = 'WHOWILLWINAIRACE.COM'; x.fillText(u, R - x.measureText(u).width, 578);
+    const u = 'WHOWILLWINTHEAIRACE.COM'; x.fillText(u, R - x.measureText(u).width, 578);
     return new Promise((res, rej) => c.toBlob((b) => (b ? res(b) : rej(new Error('toBlob failed'))), 'image/png'));
   }
 
@@ -255,7 +255,7 @@ export default class Page extends Component {
       shareUrl: s.shareUrl || '',
       rec: pick ? this.rec() : this.RECORDS[0],
       shareAlt: pick ? 'Official prediction record. My pick: ' + pick.name + '. Actual winner: me. Reason: ' + this.rec().reason.toLowerCase() + '. Status: ' + this.rec().status.toLowerCase() + '.' : '',
-      xUrl: pick ? 'https://x.com/intent/tweet?text=' + encodeURIComponent(this.shareText(pick.name)) + '&url=' + encodeURIComponent('https://whowillwinairace.com') : 'https://x.com',
+      xUrl: pick ? 'https://x.com/intent/tweet?text=' + encodeURIComponent(this.shareText(pick.name)) + '&url=' + encodeURIComponent('https://whowillwintheairace.com') : 'https://x.com',
       votes: this.OPTS.map((o) => {
         const pct = total ? Math.round(((s.tallies[o.id] || 0) * 100) / total) : 0;
         return { name: o.name, pct, label: pct + '%', fillCls: 'vfill' + (o.id === s.pick ? ' is-mine' : '') };
@@ -286,7 +286,7 @@ export default class Page extends Component {
       </svg>
 
       <header style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '12px 24px', padding: '22px clamp(20px, 5vw, 64px)', borderBottom: '1px solid rgba(32, 32, 32, 0.14)' }}>
-      <span style={{ fontFamily: 'var(--mono)', fontSize: '13px', letterSpacing: '0.02em' }}>whowillwinairace.com</span>
+      <span style={{ fontFamily: 'var(--mono)', fontSize: '13px', letterSpacing: '0.02em' }}>whowillwintheairace.com</span>
       <span style={{ fontFamily: 'var(--mono)', fontSize: '11px', fontWeight: '500', letterSpacing: '0.18em', color: '#BF2E2A', border: '1px solid #BF2E2A', padding: '6px 10px 5px' }}>TOP SECRET · EYES ONLY</span>
       </header>
 
@@ -448,7 +448,7 @@ export default class Page extends Component {
       <section className="after d2" style={{ maxWidth: '660px', margin: 'clamp(80px, 9vw, 112px) auto 0' }}>
       <p style={{ margin: '0 0 18px', fontFamily: 'var(--mono)', fontSize: '11px', letterSpacing: '0.16em', color: '#BF2E2A' }}>EXHIBIT B — APPROVED FOR PUBLIC RELEASE</p>
       <div className="record">
-      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: '12px', flexWrap: 'wrap', fontSize: '12px', letterSpacing: '0.1em' }}><span style={{ fontWeight: '500' }}>WHOWILLWINAIRACE.COM</span><span style={{ color: '#BF2E2A', border: '1px solid #BF2E2A', padding: '3px 7px 2px', fontSize: '10px', letterSpacing: '0.16em' }}>TOP SECRET</span></div>
+      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: '12px', flexWrap: 'wrap', fontSize: '12px', letterSpacing: '0.1em' }}><span style={{ fontWeight: '500' }}>WHOWILLWINTHEAIRACE.COM</span><span style={{ color: '#BF2E2A', border: '1px solid #BF2E2A', padding: '3px 7px 2px', fontSize: '10px', letterSpacing: '0.16em' }}>TOP SECRET</span></div>
       <div style={{ height: '1px', margin: '14px 0 16px', background: 'rgba(32, 32, 32, 0.2)' }}></div>
       <p style={{ margin: '0 0 12px', fontWeight: '600', fontSize: '15px', letterSpacing: '0.1em' }}>OFFICIAL PREDICTION RECORD</p>
       <div className="rrow"><span className="rlab">MY PICK</span><span className="rdots"></span><span className="rval">{v.pickUpper}</span></div>
@@ -466,7 +466,7 @@ export default class Page extends Component {
       <img src={v.shareUrl} alt={v.shareAlt} width="1200" height="675" />
       <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
       <p style={{ margin: '0 0 4px', fontFamily: 'var(--mono)', fontSize: '12px', lineHeight: '1.6', color: '#4A4844' }}>evidence developed. 1200 × 675, sized for X.</p>
-      <a className="btn btn-solid" href={v.shareUrl} download="whowillwinairace-record.png">[ DOWNLOAD IMAGE ]</a>
+      <a className="btn btn-solid" href={v.shareUrl} download="whowillwintheairace-record.png">[ DOWNLOAD IMAGE ]</a>
       <a className="btn btn-ghost" href={v.xUrl} target="_blank" rel="noopener noreferrer">[ POST IT ON X ]</a>
       </div>
       </div>
@@ -490,7 +490,7 @@ export default class Page extends Component {
 
       <footer style={{ marginTop: 'clamp(110px, 12vw, 160px)', padding: '26px clamp(20px, 5vw, 64px) 40px', borderTop: '1px solid rgba(32, 32, 32, 0.16)', display: 'flex', flexDirection: 'column', gap: '12px', fontFamily: 'var(--mono)', fontSize: '11.5px', letterSpacing: '0.04em', color: '#6B6863' }}>
       <div style={{ display: 'flex', justifyContent: 'space-between', flexWrap: 'wrap', gap: '10px 32px' }}>
-      <span style={{ color: '#202020' }}>© 2026 WHOWILLWINAIRACE.COM</span>
+      <span style={{ color: '#202020' }}>© 2026 WHOWILLWINTHEAIRACE.COM</span>
       <span>internal memo: <button type="button" className={v.redactCls} onClick={v.onRedact} aria-label={v.redactLabel}>we also pay for all five.</button></span>
       </div>
       <p style={{ margin: '6px 0 0', fontFamily: 'var(--serif)', fontStyle: 'italic', fontSize: '19px', letterSpacing: '0', color: '#202020' }}>no AI companies were harmed in the making of this website. their valuations remain intact.</p>
