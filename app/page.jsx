@@ -11,7 +11,7 @@ export default class Page extends Component {
     { id: 'meta', name: 'Meta', sub: 'the source code is on GitHub.', roast: 'they open-sourced the finish line. everyone crossed it.' }
   ];
   // sealed → prediction_selected → verifying → opening → revealed
-  state = { phase: 'sealed', pick: null, step: 0, settled: false, opens: 0, stampClicks: 0, tallies: {}, redacted: true, sharing: false, shareUrl: null };
+  state = { phase: 'sealed', pick: null, step: 0, settled: false, opens: 0, stampClicks: 0, tallies: {}, boxDown: false, redacted: true, sharing: false, shareUrl: null };
   timers = [];
 
   componentWillUnmount() { this.clear(); this.dropShare(); cancelAnimationFrame(this.raf); }
@@ -37,7 +37,8 @@ export default class Page extends Component {
     this.clear();
     if (page) { page.style.setProperty('--rx', '0deg'); page.style.setProperty('--ry', '0deg'); page.style.setProperty('--sx', '0'); page.style.setProperty('--sy', '0'); }
     this.dropShare();
-    this.setState({ phase: 'verifying', step: 0, settled: false, shareUrl: null, opens: s.opens + 1, tallies: Object.assign({}, s.tallies, { [s.pick]: (s.tallies[s.pick] || 0) + 1 }) });
+    this.setState({ phase: 'verifying', step: 0, settled: false, shareUrl: null, opens: s.opens + 1, tallies: {}, boxDown: false });
+    this.castVote(s.pick);
     const stage = page && page.querySelector('.stage');
     if (stage) {
       const r = stage.getBoundingClientRect();
@@ -52,6 +53,20 @@ export default class Page extends Component {
     at(3180, () => this.setState({ phase: 'revealed' }));
     at(3420, () => { const t = page && page.querySelector('[data-report-title]'); if (t) t.focus({ preventScroll: true }); });
     at(5600, () => this.setState({ settled: true }));
+  }
+
+  // One ballot per browser (id kept in localStorage); the server replaces an earlier pick instead of double counting.
+  async castVote(pick) {
+    try {
+      let voter = localStorage.getItem('air-voter');
+      if (!voter) { voter = crypto.randomUUID(); localStorage.setItem('air-voter', voter); }
+      const res = await fetch('/api/vote', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ voter, pick }) });
+      if (!res.ok) throw new Error(String(res.status));
+      const { tallies } = await res.json();
+      if (this.state.pick === pick) this.setState({ tallies });
+    } catch (_) {
+      this.setState({ tallies: { [pick]: 1 }, boxDown: true });
+    }
   }
 
   onSeal = (e) => this.seal(e.currentTarget.closest('.page'));
@@ -233,8 +248,9 @@ export default class Page extends Component {
         const pct = total ? Math.round(((s.tallies[o.id] || 0) * 100) / total) : 0;
         return { name: o.name, pct, label: pct + '%', fillCls: 'vfill' + (o.id === s.pick ? ' is-mine' : '') };
       }),
-      // ponytail: session-only tally, honest about it. Swap for the server count when the ballot box (DB) is wired.
-      votesNote: 'ballots counted: ' + total + '. ' + (total === 1 ? 'it is yours.' : 'all of them are yours.') + ' the public tally opens once the ballot box is connected to a real database.',
+      votesNote: s.boxDown
+        ? 'ballot box unreachable. showing your ballot only. it is, as always, yours.'
+        : 'ballots counted: ' + total + '. yours is among them. one ballot per browser. latest opinion wins.',
       redactCls: 'redact' + (s.redacted ? '' : ' is-shown'),
       redactLabel: s.redacted ? 'redacted sentence. press to reveal.' : undefined,
       onRedact: this.onRedact
