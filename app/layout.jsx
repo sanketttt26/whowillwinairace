@@ -7,7 +7,7 @@ const sans = IBM_Plex_Sans({ subsets: ['latin'], weight: ['400', '500', '600'], 
 const serif = Instrument_Serif({ subsets: ['latin'], weight: '400', style: ['normal', 'italic'], variable: '--font-serif' });
 
 export const metadata = {
-  metadataBase: new URL('https://whowillwintheairace.com'),
+  metadataBase: new URL('https://www.whowillwintheairace.com'),
   title: 'whowillwintheairace.com — the winner has already been chosen',
   description: 'after billions of dollars, millions of GPUs, and an unreasonable number of podcasts, we finally have an answer.',
   openGraph: { title: 'the winner has already been chosen.', description: 'do not open until you have an opinion.', url: '/' },

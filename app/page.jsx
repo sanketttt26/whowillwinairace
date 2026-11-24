@@ -256,7 +256,7 @@ export default class Page extends Component {
       shareUrl: s.shareUrl || '',
       rec: pick ? this.rec() : this.RECORDS[0],
       shareAlt: pick ? 'Official prediction record. My pick: ' + pick.name + '. Actual winner: me. Reason: ' + this.rec().reason.toLowerCase() + '. Status: ' + this.rec().status.toLowerCase() + '.' : '',
-      xUrl: pick ? 'https://x.com/intent/tweet?text=' + encodeURIComponent(this.shareText(pick.name)) + '&url=' + encodeURIComponent('https://whowillwintheairace.com') : 'https://x.com',
+      xUrl: pick ? 'https://x.com/intent/tweet?text=' + encodeURIComponent(this.shareText(pick.name)) + '&url=' + encodeURIComponent('https://www.whowillwintheairace.com') : 'https://x.com',
       votes: this.OPTS.map((o) => {
         const pct = total ? Math.round(((s.tallies[o.id] || 0) * 100) / total) : 0;
         return { name: o.name, pct, label: pct + '%', fillCls: 'vfill' + (o.id === s.pick ? ' is-mine' : '') };
