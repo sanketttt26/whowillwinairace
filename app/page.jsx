@@ -200,7 +200,7 @@ export default class Page extends Component {
     const revealed = phase === 'revealed';
     const pick = this.OPTS.find((o) => o.id === s.pick);
     const total = Object.keys(s.tallies).reduce((a, k) => a + s.tallies[k], 0);
-    const steps = ['verifying confidential intelligence...', 'consulting 47 proprietary benchmarks...', 'ignoring all of them...'];
+    const steps = ['verifying confidential intelligence…', 'consulting 47 proprietary benchmarks…', 'ignoring all of them…'];
     const lines = steps.slice(0, Math.min(s.step, 3)).map((text, i) => ({ text, done: s.step >= i + 2, caret: s.step === i + 1, mark: i === 2 ? 'done.' : 'ok' }));
     return {
       stageClass: 'stage is-' + phase,
@@ -239,7 +239,7 @@ export default class Page extends Component {
       roast: pick ? pick.roast : '',
       onShare: this.onShare,
       sharing: s.sharing,
-      shareLabel: s.sharing ? '[ DEVELOPING EVIDENCE... ]' : '[ SHARE THE TRUTH ]',
+      shareLabel: s.sharing ? '[ DEVELOPING EVIDENCE… ]' : '[ SHARE THE TRUTH ]',
       shareReady: !!s.shareUrl,
       shareUrl: s.shareUrl || '',
       shareAlt: pick ? 'Official prediction record. My pick: ' + pick.name + '. Actual winner: me. Reason: $20 a month. Status: financially confused.' : '',
@@ -250,6 +250,7 @@ export default class Page extends Component {
       }),
       votesNote: s.boxDown
         ? 'ballot box unreachable. showing your ballot only. it is, as always, yours.'
+        : !total ? 'counting ballots…'
         : 'ballots counted: ' + total + '. yours is among them. one ballot per browser. latest opinion wins.',
       redactCls: 'redact' + (s.redacted ? '' : ' is-shown'),
       redactLabel: s.redacted ? 'redacted sentence. press to reveal.' : undefined,
@@ -385,7 +386,7 @@ export default class Page extends Component {
       {v.showClosure && (<>
       <p style={{ margin: '18px 0 0', fontFamily: 'var(--mono)', fontSize: '13px', color: '#BF2E2A' }}>NOTE: the result has not changed. please seek closure.</p>
       </>)}
-      <div style={{ marginTop: '30px' }}><span className="stamp slam slam-1" style={{ '--r': '-5deg', fontSize: 'clamp(24px, 5vw, 40px)' }}>WINNER CONFIRMED.</span></div>
+      <div style={{ marginTop: '30px' }}><span className="stamp slam slam-1" style={{ '--r': '-5deg', fontSize: 'clamp(14px, 4.6vw, 40px)' }}>WINNER CONFIRMED.</span></div>
       </div>
       <div className="panel panel-2">
       <p style={{ margin: '0', fontFamily: 'var(--mono)', fontSize: '11px', letterSpacing: '0.16em', color: '#6B6863' }}>SUBJECT IDENTIFIED AS:</p>
@@ -405,7 +406,7 @@ export default class Page extends Component {
 
       {v.showBallot && (<>
       <section style={{ maxWidth: '780px', margin: '0 auto', paddingTop: 'clamp(96px, 11vw, 140px)', display: 'flex', flexDirection: 'column', alignItems: 'stretch', gap: '0' }}>
-      <h2 id="q-title" style={{ margin: '0 0 32px', textAlign: 'center', fontFamily: 'var(--serif)', fontWeight: '400', fontSize: 'clamp(38px, 5vw, 60px)', lineHeight: '1', letterSpacing: '-0.015em' }}>so, who's winning this thing?</h2>
+      <h2 id="q-title" style={{ margin: '0 0 32px', textAlign: 'center', textWrap: 'balance', fontFamily: 'var(--serif)', fontWeight: '400', fontSize: 'clamp(38px, 5vw, 60px)', lineHeight: '1', letterSpacing: '-0.015em' }}>so, who's winning this thing?</h2>
       <fieldset className="ballot" aria-labelledby="q-title">
       <div className="bhead"><span>FORM AIR-5 · OFFICIAL BALLOT</span><span>MARK ONE (1) BOX ONLY</span></div>
       {v.options.map((o, i) => (<Fragment key={i}>
@@ -471,7 +472,7 @@ export default class Page extends Component {
       </Fragment>))}
       </div>
       <p style={{ margin: '18px 0 0', fontFamily: 'var(--serif)', fontStyle: 'italic', fontSize: '21px', color: '#202020' }}>the wisdom of crowds. historically a flawless system.</p>
-      <p style={{ margin: '8px 0 0', fontFamily: 'var(--mono)', fontSize: '11.5px', lineHeight: '1.6', color: '#6B6863' }}>{v.votesNote}</p>
+      <p aria-live="polite" style={{ margin: '8px 0 0', fontFamily: 'var(--mono)', fontSize: '11.5px', lineHeight: '1.6', color: '#6B6863' }}>{v.votesNote}</p>
       </section>
       </>)}
 
