@@ -22,7 +22,7 @@ export default class Page extends Component {
   ];
   rec() { return this.RECORDS[Math.floor(this.state.roll * this.RECORDS.length)]; }
   // sealed → prediction_selected → verifying → opening → revealed
-  state = { phase: 'sealed', pick: null, step: 0, settled: false, opens: 0, stampClicks: 0, tallies: {}, boxDown: false, redacted: true, sharing: false, shareUrl: null };
+  state = { phase: 'sealed', pick: null, step: 0, settled: false, opens: 0, stampClicks: 0, tallies: {}, boxDown: false, limited: false, redacted: true, sharing: false, shareUrl: null };
   timers = [];
 
   componentWillUnmount() { this.clear(); this.dropShare(); cancelAnimationFrame(this.raf); }
@@ -72,9 +72,10 @@ export default class Page extends Component {
       let voter = localStorage.getItem('air-voter');
       if (!voter) { voter = crypto.randomUUID(); localStorage.setItem('air-voter', voter); }
       const res = await fetch('/api/vote', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ voter, pick }) });
-      if (!res.ok) throw new Error(String(res.status));
-      const { tallies } = await res.json();
-      if (this.state.pick === pick) this.setState({ tallies });
+      const { tallies } = await res.json().catch(() => ({}));
+      if (!tallies) throw new Error(String(res.status));
+      // 429 with a tally: this network is over its daily new-voter cap, so the ballot wasn't counted.
+      if (this.state.pick === pick) this.setState({ tallies, limited: res.status === 429 });
     } catch (_) {
       this.setState({ tallies: { [pick]: 1 }, boxDown: true });
     }
@@ -262,6 +263,7 @@ export default class Page extends Component {
       }),
       votesNote: s.boxDown
         ? 'ballot box unreachable. showing your ballot only. it is, as always, yours.'
+        : s.limited ? 'too many new ballots from your network today. yours was noted, not counted.'
         : !total ? 'counting ballots…'
         : 'ballots counted: ' + total + '. yours is among them. one ballot per browser. latest opinion wins.',
       redactCls: 'redact' + (s.redacted ? '' : ' is-shown'),
