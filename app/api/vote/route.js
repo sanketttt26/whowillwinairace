@@ -1,5 +1,15 @@
 import { NextResponse } from 'next/server';
-import { OPTION_IDS, castVote } from '@/lib/store';
+import { OPTION_IDS, castVote, getTally } from '@/lib/store';
+
+// Public tally for the nav counter. CDN-cached for 10s so page views don't each cost a Redis command.
+export async function GET() {
+  try {
+    return NextResponse.json({ tallies: await getTally() }, { headers: { 'Cache-Control': 'public, s-maxage=10, stale-while-revalidate=60' } });
+  } catch (e) {
+    console.error(e);
+    return NextResponse.json({ error: 'ballot box unavailable' }, { status: 503 });
+  }
+}
 
 export async function POST(req) {
   let body;

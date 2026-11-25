@@ -11,8 +11,18 @@ export default class Page extends Component {
     { id: 'meta', name: 'Meta', sub: 'the source code is on GitHub.', roast: 'they open-sourced the finish line. everyone crossed it.' }
   ];
   // sealed → prediction_selected → verifying → opening → revealed
-  state = { phase: 'sealed', pick: null, step: 0, settled: false, opens: 0, stampClicks: 0, tallies: {}, boxDown: false, redacted: true, sharing: false, shareUrl: null };
+  state = { phase: 'sealed', pick: null, step: 0, settled: false, opens: 0, stampClicks: 0, tallies: {}, total: null, boxDown: false, redacted: true, sharing: false, shareUrl: null };
   timers = [];
+
+  // Nav counter: total ballots on file. Stays hidden if the ballot box can't be reached.
+  async componentDidMount() {
+    try {
+      const res = await fetch('/api/vote');
+      if (!res.ok) throw new Error(String(res.status));
+      const { tallies } = await res.json();
+      this.setState((s) => (s.total === null ? { total: Object.values(tallies).reduce((a, n) => a + n, 0) } : null));
+    } catch (_) { /* no counter rather than a wrong one */ }
+  }
 
   componentWillUnmount() { this.clear(); this.dropShare(); cancelAnimationFrame(this.raf); }
   clear() { this.timers.forEach(clearTimeout); this.timers = []; }
@@ -63,7 +73,8 @@ export default class Page extends Component {
       const res = await fetch('/api/vote', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ voter, pick }) });
       if (!res.ok) throw new Error(String(res.status));
       const { tallies } = await res.json();
-      if (this.state.pick === pick) this.setState({ tallies });
+      const total = Object.values(tallies).reduce((a, n) => a + n, 0);
+      this.setState(this.state.pick === pick ? { tallies, total } : { total });
     } catch (_) {
       this.setState({ tallies: { [pick]: 1 }, boxDown: true });
     }
@@ -248,10 +259,11 @@ export default class Page extends Component {
         const pct = total ? Math.round(((s.tallies[o.id] || 0) * 100) / total) : 0;
         return { name: o.name, pct, label: pct + '%', fillCls: 'vfill' + (o.id === s.pick ? ' is-mine' : '') };
       }),
+      totalLabel: s.total === null ? '' : new Intl.NumberFormat('en-US').format(s.total) + (s.total === 1 ? ' OPINION ON FILE' : ' OPINIONS ON FILE'),
       votesNote: s.boxDown
         ? 'ballot box unreachable. showing your ballot only. it is, as always, yours.'
         : !total ? 'counting ballots…'
-        : 'ballots counted: ' + total + '. yours is among them. one ballot per browser. latest opinion wins.',
+        : 'ballots counted: ' + new Intl.NumberFormat('en-US').format(total) + '. yours is among them. one ballot per browser. latest opinion wins.',
       redactCls: 'redact' + (s.redacted ? '' : ' is-shown'),
       redactLabel: s.redacted ? 'redacted sentence. press to reveal.' : undefined,
       onRedact: this.onRedact
@@ -275,7 +287,10 @@ export default class Page extends Component {
 
       <header style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '12px 24px', padding: '22px clamp(20px, 5vw, 64px)', borderBottom: '1px solid rgba(32, 32, 32, 0.14)' }}>
       <span style={{ fontFamily: 'var(--mono)', fontSize: '13px', letterSpacing: '0.02em' }}>whowillwinairace.com</span>
+      <span style={{ display: 'flex', alignItems: 'center', flexWrap: 'wrap', gap: '10px 18px' }}>
+      {v.totalLabel && (<span style={{ fontFamily: 'var(--mono)', fontSize: '11px', fontWeight: '500', letterSpacing: '0.18em', color: '#4A4844', fontVariantNumeric: 'tabular-nums' }}>{v.totalLabel}</span>)}
       <span style={{ fontFamily: 'var(--mono)', fontSize: '11px', fontWeight: '500', letterSpacing: '0.18em', color: '#BF2E2A', border: '1px solid #BF2E2A', padding: '6px 10px 5px' }}>TOP SECRET · EYES ONLY</span>
+      </span>
       </header>
 
       <main style={{ padding: '0 clamp(20px, 5vw, 64px)' }}>
