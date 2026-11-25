@@ -1,6 +1,7 @@
 'use client';
 
 import { Component, Fragment } from 'react';
+import { SITE_URL } from '@/lib/site';
 
 export default class Page extends Component {
   OPTS = [
@@ -146,7 +147,7 @@ export default class Page extends Component {
       this.setState({ sharing: false, shareUrl: URL.createObjectURL(blob) });
       const file = new File([blob], 'whowillwinairace-record.png', { type: 'image/png' });
       if (navigator.canShare && navigator.canShare({ files: [file] })) {
-        try { await navigator.share({ files: [file], text: this.shareText(pick.name) + '\n\nwhowillwinairace.com' }); } catch (_) { /* cancelled or blocked: the download + X links below still work */ }
+        try { await navigator.share({ files: [file], text: this.shareText(pick.name) + '\n\n' + SITE_URL }); } catch (_) { /* cancelled or blocked: the download + X links below still work */ }
       }
     } catch (_) {
       this.setState({ sharing: false });
@@ -254,7 +255,7 @@ export default class Page extends Component {
       shareReady: !!s.shareUrl,
       shareUrl: s.shareUrl || '',
       shareAlt: pick ? 'Official prediction record. My pick: ' + pick.name + '. Actual winner: me. Reason: $20 a month. Status: financially confused.' : '',
-      xUrl: pick ? 'https://x.com/intent/tweet?text=' + encodeURIComponent(this.shareText(pick.name)) + '&url=' + encodeURIComponent('https://whowillwinairace.com') : 'https://x.com',
+      xUrl: pick ? 'https://x.com/intent/tweet?text=' + encodeURIComponent(this.shareText(pick.name)) + '&url=' + encodeURIComponent(SITE_URL) : 'https://x.com',
       votes: this.OPTS.map((o) => {
         const pct = total ? Math.round(((s.tallies[o.id] || 0) * 100) / total) : 0;
         return { name: o.name, pct, label: pct + '%', fillCls: 'vfill' + (o.id === s.pick ? ' is-mine' : '') };
