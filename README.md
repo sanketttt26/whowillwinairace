@@ -90,7 +90,8 @@ lib/
 instrumentation-client.js   BotID client setup
 next.config.mjs             BotID Next.js integration
 .claude/skills/             design-review skills used on this codebase
-.github/workflows/          release automation
+.github/workflows/          release automation (see Releases)
+CHANGELOG.md                release notes per version
 ```
 
 ## Deploying
@@ -101,14 +102,13 @@ The canonical URL is set in `lib/site.js`. It drives link previews and share lin
 
 ## Releases
 
-Versions follow [semantic versioning](https://semver.org) and live in `package.json`. To publish a release:
+Versions follow [semantic versioning](https://semver.org). To publish a release:
 
-```bash
-git tag -a v1.1.0 -m "Release notes go here"
-git push origin v1.1.0
-```
+1. Bump `version` in `package.json`.
+2. Add a `## vX.Y.Z` section at the top of `CHANGELOG.md` with the release notes.
+3. Merge to `main`.
 
-The Release workflow then creates the GitHub release, using the tag message followed by GitHub's generated list of merged pull requests.
+The Release workflow sees a version that hasn't been released yet and publishes the GitHub release (tag `vX.Y.Z`), using the changelog section followed by GitHub's generated list of merged pull requests. Pushes that don't change the version do nothing.
 
 ## Design review skills
 
