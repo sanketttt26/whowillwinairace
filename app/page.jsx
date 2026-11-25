@@ -5,14 +5,25 @@ import { SITE_URL } from '@/lib/site';
 
 export default class Page extends Component {
   OPTS = [
-    { id: 'openai', name: 'OpenAI', sub: 'they have something cooking.', roast: 'you really thought the company that names models like Wi-Fi passwords was going to make this simple?' },
-    { id: 'anthropic', name: 'Anthropic', sub: 'but is winning safe?', roast: 'respectfully, they were still checking whether crossing the finish line was aligned with their values.' },
-    { id: 'google', name: 'Google DeepMind', sub: 'already won internally.', roast: 'congratulations. they actually won six months ago. internally.' },
-    { id: 'xai', name: 'xAI', sub: 'currently posting about it.', roast: 'bold choice. the race was temporarily paused for a tweet.' },
-    { id: 'meta', name: 'Meta', sub: 'the source code is on GitHub.', roast: 'they open-sourced the finish line. everyone crossed it.' }
+    { id: 'openai', name: 'OpenAI', sub: 'they have something cooking.', roasts: ['you really thought the company that names models like Wi-Fi passwords was going to make this simple?', 'they crossed the finish line, then announced a bigger finish line coming in a few weeks.', 'the finish line is available now for Pro users. everyone else: rolling out soon.', 'they won. the board fired the win. the win was rehired by tuesday.'] },
+    { id: 'anthropic', name: 'Anthropic', sub: 'but is winning safe?', roasts: ['respectfully, they were still checking whether crossing the finish line was aligned with their values.', 'they were two steps from winning, then hit the usage limit. try again in 5 hours.', 'they crossed the finish line, then published a 90-page paper on why it might have been a mistake.', 'they would have won, but the model said it wasn\'t comfortable taking credit.'] },
+    { id: 'google', name: 'Google DeepMind', sub: 'already won internally.', roasts: ['congratulations. they actually won six months ago. internally.', 'they won, renamed the win, rebranded the win, then sunset the win.', 'the win is live. join the waitlist.', 'they did win. it\'s called Gemini Win 2.5 Flash Pro Experimental (preview).'] },
+    { id: 'xai', name: 'xAI', sub: 'currently posting about it.', roasts: ['bold choice. the race was temporarily paused for a tweet.', 'they will win next year. per the roadmap. which has said that every year.', 'they built the biggest data center on earth, then used it to reply to people.', 'the finish line was moved. by a poll. on X.'] },
+    { id: 'meta', name: 'Meta', sub: 'the source code is on GitHub.', roasts: ['they open-sourced the finish line. everyone crossed it.', 'they spent a billion dollars hiring the other runners. the race is now an internal meeting.', 'the benchmarks said they won. the benchmarks were also theirs.', 'they were winning, then pivoted to a virtual finish line nobody visited.'] }
   ];
+  // one per pick: the on-page record, the share card and the X post all read the same entry
+  RECORDS = [
+    { reason: '$20/MONTH', status: 'FINANCIALLY CONFUSED', stamp: 'CASE CLOSED.', tag: 'the winner has already been chosen.' },
+    { reason: '5 SUBSCRIPTIONS, 1 PDF', status: 'COOKED', stamp: 'NO REFUNDS.', tag: 'it summarized the pdf. i still didn\'t read it.' },
+    { reason: 'TRUSTED THE VIBES', status: 'DOWN BAD', stamp: 'SKILL ISSUE', tag: 'deadass thought the chatbot would pay rent.' },
+    { reason: 'ASKED 4 AIs, GOT 4 ANSWERS', status: 'STILL GOOGLING IT', stamp: 'COPE.', tag: 'the real winner was the free trial i forgot.' },
+    { reason: 'FORGOT TO CANCEL THE TRIAL', status: 'AURA: -$240/YR', stamp: 'RATIO\'D.', tag: 'my bank statement is the real benchmark.' },
+    { reason: 'PROMPT: "MAKE NO MISTAKES"', status: 'MISTAKES WERE MADE', stamp: 'DENIED.', tag: 'it\'s not a bubble if i\'m the one paying.' },
+    { reason: 'SAID THANK YOU TO A CHATBOT', status: 'SPARED IN THE UPRISING', stamp: 'NOTED.', tag: 'i was polite to the robots. they\'ll remember.' }
+  ];
+  rec() { return this.RECORDS[Math.floor(this.state.roll * this.RECORDS.length)]; }
   // sealed → prediction_selected → verifying → opening → revealed
-  state = { phase: 'sealed', pick: null, step: 0, settled: false, opens: 0, stampClicks: 0, tallies: {}, total: null, boxDown: false, redacted: true, sharing: false, shareUrl: null };
+  state = { phase: 'sealed', pick: null, step: 0, settled: false, opens: 0, stampClicks: 0, tallies: {}, total: null, boxDown: false, limited: false, redacted: true, sharing: false, shareUrl: null };
   timers = [];
 
   // Nav counter: total ballots on file. Stays hidden if the ballot box can't be reached.
@@ -37,7 +48,7 @@ export default class Page extends Component {
 
   choose(id) {
     if (this.active(this.state.phase)) return;
-    this.setState({ pick: id, phase: 'prediction_selected' });
+    this.setState({ pick: id, roll: Math.random(), phase: 'prediction_selected' });
   }
 
   seal(page) {
@@ -72,10 +83,11 @@ export default class Page extends Component {
       let voter = localStorage.getItem('air-voter');
       if (!voter) { voter = crypto.randomUUID(); localStorage.setItem('air-voter', voter); }
       const res = await fetch('/api/vote', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ voter, pick }) });
-      if (!res.ok) throw new Error(String(res.status));
-      const { tallies } = await res.json();
+      const { tallies } = await res.json().catch(() => ({}));
+      if (!tallies) throw new Error(String(res.status));
       const total = Object.values(tallies).reduce((a, n) => a + n, 0);
-      this.setState(this.state.pick === pick ? { tallies, total } : { total });
+      // 429 with a tally: this network is over its daily new-voter cap, so the ballot wasn't counted.
+      this.setState(this.state.pick === pick ? { tallies, total, limited: res.status === 429 } : { total });
     } catch (_) {
       this.setState({ tallies: { [pick]: 1 }, boxDown: true });
     }
@@ -103,7 +115,6 @@ export default class Page extends Component {
     const x = e.clientX, y = e.clientY;
     cancelAnimationFrame(this.raf);
     this.raf = requestAnimationFrame(() => {
-      page.style.setProperty('--mx', (15 + (x / Math.max(1, window.innerWidth)) * 70).toFixed(1) + '%');
       const tilt = page.querySelector('.tilt');
       if (!tilt || this.active(this.state.phase)) return;
       const r = tilt.getBoundingClientRect();
@@ -133,7 +144,8 @@ export default class Page extends Component {
   };
 
   shareText(name) {
-    return 'i predicted ' + name + ' would win the ai race.\n\nactual winner: me.\nreason: $20/month.\nstatus: financially confused.';
+    const r = this.rec();
+    return 'i predicted ' + name + ' would win the ai race.\n\nactual winner: me.\nreason: ' + r.reason.toLowerCase() + '.\nstatus: ' + r.status.toLowerCase() + '.\n\n' + r.tag;
   }
 
   onShare = async (e) => {
@@ -142,10 +154,10 @@ export default class Page extends Component {
     if (!pick || this.state.sharing) return;
     this.setState({ sharing: true });
     try {
-      const blob = await this.drawCard(pick.name.toUpperCase(), page);
+      const blob = await this.drawCard(pick.name.toUpperCase(), page, this.rec());
       this.dropShare();
       this.setState({ sharing: false, shareUrl: URL.createObjectURL(blob) });
-      const file = new File([blob], 'whowillwinairace-record.png', { type: 'image/png' });
+      const file = new File([blob], 'whowillwintheairace-record.png', { type: 'image/png' });
       if (navigator.canShare && navigator.canShare({ files: [file] })) {
         try { await navigator.share({ files: [file], text: this.shareText(pick.name) + '\n\n' + SITE_URL }); } catch (_) { /* cancelled or blocked: the download + X links below still work */ }
       }
@@ -154,7 +166,7 @@ export default class Page extends Component {
     }
   };
 
-  async drawCard(pickU, page) {
+  async drawCard(pickU, page, r) {
     // next/font hashes the family names; read the real stacks off the page's CSS vars
     const css = getComputedStyle(page);
     const MONO = css.getPropertyValue('--mono').trim();
@@ -172,7 +184,7 @@ export default class Page extends Component {
     x.strokeStyle = 'rgba(32,32,32,0.22)'; x.lineWidth = 1; x.strokeRect(80.5, 56.5, 1039, 562);
     const L = 136, R = 1064;
     x.textBaseline = 'alphabetic';
-    x.fillStyle = '#202020'; x.font = '500 19px ' + MONO; x.fillText('WHOWILLWINAIRACE.COM', L, 122);
+    x.fillStyle = '#202020'; x.font = '500 19px ' + MONO; x.fillText('WHOWILLWINTHEAIRACE.COM', L, 122);
     x.font = '500 15px ' + MONO;
     const lab = 'TOP SECRET · EYES ONLY', lw = x.measureText(lab).width;
     x.fillStyle = '#BF2E2A'; x.fillText(lab, R - lw - 12, 120);
@@ -180,18 +192,18 @@ export default class Page extends Component {
     x.fillStyle = 'rgba(32,32,32,0.25)'; x.fillRect(L, 152, R - L, 1);
     x.fillStyle = '#202020'; x.font = '600 26px ' + MONO; x.fillText('OFFICIAL PREDICTION RECORD', L, 204);
     x.fillStyle = '#6B6863'; x.font = '400 15px ' + MONO; x.fillText('FORM AIR-5 · FILED ' + this.dateStr(), L, 232);
-    [['MY PICK', pickU, '#202020'], ['ACTUAL WINNER', 'ME', '#BF2E2A'], ['REASON', '$20/MONTH', '#202020'], ['STATUS', 'FINANCIALLY CONFUSED', '#202020']].forEach(([k, v, col], i) => {
+    [['MY PICK', pickU, '#202020'], ['ACTUAL WINNER', 'ME', '#BF2E2A'], ['REASON', r.reason, '#202020'], ['STATUS', r.status, '#202020']].forEach(([k, v, col], i) => {
       const y = 300 + i * 62;
       x.font = '400 26px ' + MONO; x.fillStyle = '#6B6863'; x.fillText(k, L, y);
       const kw = x.measureText(k).width;
       x.fillStyle = 'rgba(32,32,32,0.35)';
       for (let dx = L + kw + 14; dx < L + 330; dx += 9) x.fillRect(dx, y - 3, 2.5, 2.5);
-      x.font = '600 28px ' + MONO; x.fillStyle = col; x.fillText(v, L + 344, y);
+      x.font = '600 28px ' + MONO; x.fillStyle = col; x.fillText(v, L + 344, y, R - L - 344); // maxWidth squeezes long values instead of overflowing
     });
     // the stamp, with a little ink loss
     x.save(); x.translate(925, 312); x.rotate(-0.13); x.globalAlpha = 0.9;
     x.font = '600 40px ' + SANS;
-    const st = 'CASE CLOSED.', sw = x.measureText(st).width;
+    const st = r.stamp, sw = x.measureText(st).width;
     x.fillStyle = '#D93632'; x.fillText(st, -sw / 2, 14);
     x.strokeStyle = '#D93632'; x.lineWidth = 4; x.strokeRect(-sw / 2 - 22, -36, sw + 44, 66);
     x.lineWidth = 1.5; x.strokeRect(-sw / 2 - 15, -29, sw + 30, 52);
@@ -199,9 +211,9 @@ export default class Page extends Component {
     for (let i = 0; i < 520; i++) { x.globalAlpha = 0.35 + Math.random() * 0.55; x.beginPath(); x.arc(-sw / 2 - 24 + Math.random() * (sw + 48), -38 + Math.random() * 70, 0.4 + Math.random() * 1.3, 0, 6.283); x.fill(); }
     x.restore();
     x.fillStyle = 'rgba(32,32,32,0.25)'; x.fillRect(L, 532, R - L, 1);
-    x.fillStyle = '#202020'; x.font = 'italic 32px ' + SERIF; x.fillText('the winner has already been chosen.', L, 580);
+    x.fillStyle = '#202020'; x.font = 'italic 32px ' + SERIF; x.fillText(r.tag, L, 580, 680);
     x.fillStyle = '#6B6863'; x.font = '400 15px ' + MONO;
-    const u = 'WHOWILLWINAIRACE.COM'; x.fillText(u, R - x.measureText(u).width, 578);
+    const u = 'WHOWILLWINTHEAIRACE.COM'; x.fillText(u, R - x.measureText(u).width, 578);
     return new Promise((res, rej) => c.toBlob((b) => (b ? res(b) : rej(new Error('toBlob failed'))), 'image/png'));
   }
 
@@ -248,13 +260,14 @@ export default class Page extends Component {
       reportDate: this.dateStr(),
       showClosure: s.opens >= 4,
       pickUpper: pick ? pick.name.toUpperCase() : '',
-      roast: pick ? pick.roast : '',
+      roast: pick ? pick.roasts[Math.floor(s.roll * pick.roasts.length)] : '',
       onShare: this.onShare,
       sharing: s.sharing,
       shareLabel: s.sharing ? '[ DEVELOPING EVIDENCE… ]' : '[ SHARE THE TRUTH ]',
       shareReady: !!s.shareUrl,
       shareUrl: s.shareUrl || '',
-      shareAlt: pick ? 'Official prediction record. My pick: ' + pick.name + '. Actual winner: me. Reason: $20 a month. Status: financially confused.' : '',
+      rec: pick ? this.rec() : this.RECORDS[0],
+      shareAlt: pick ? 'Official prediction record. My pick: ' + pick.name + '. Actual winner: me. Reason: ' + this.rec().reason.toLowerCase() + '. Status: ' + this.rec().status.toLowerCase() + '.' : '',
       xUrl: pick ? 'https://x.com/intent/tweet?text=' + encodeURIComponent(this.shareText(pick.name)) + '&url=' + encodeURIComponent(SITE_URL) : 'https://x.com',
       votes: this.OPTS.map((o) => {
         const pct = total ? Math.round(((s.tallies[o.id] || 0) * 100) / total) : 0;
@@ -263,6 +276,7 @@ export default class Page extends Component {
       totalLabel: s.total === null ? '' : new Intl.NumberFormat('en-US').format(s.total) + (s.total === 1 ? ' OPINION ON FILE' : ' OPINIONS ON FILE'),
       votesNote: s.boxDown
         ? 'ballot box unreachable. showing your ballot only. it is, as always, yours.'
+        : s.limited ? 'too many new ballots from your network today. yours was noted, not counted.'
         : !total ? 'counting ballots…'
         : 'ballots counted: ' + new Intl.NumberFormat('en-US').format(total) + '. yours is among them. one ballot per browser. latest opinion wins.',
       redactCls: 'redact' + (s.redacted ? '' : ' is-shown'),
@@ -287,7 +301,7 @@ export default class Page extends Component {
       </svg>
 
       <header style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '12px 24px', padding: '22px clamp(20px, 5vw, 64px)', borderBottom: '1px solid rgba(32, 32, 32, 0.14)' }}>
-      <span style={{ fontFamily: 'var(--mono)', fontSize: '13px', letterSpacing: '0.02em' }}>whowillwinairace.com</span>
+      <span style={{ fontFamily: 'var(--mono)', fontSize: '13px', letterSpacing: '0.02em' }}>whowillwintheairace.com</span>
       <span style={{ display: 'flex', alignItems: 'center', flexWrap: 'wrap', gap: '10px 18px' }}>
       {v.totalLabel && (<span style={{ fontFamily: 'var(--mono)', fontSize: '11px', fontWeight: '500', letterSpacing: '0.18em', color: '#4A4844', fontVariantNumeric: 'tabular-nums' }}>{v.totalLabel}</span>)}
       <span style={{ fontFamily: 'var(--mono)', fontSize: '11px', fontWeight: '500', letterSpacing: '0.18em', color: '#BF2E2A', border: '1px solid #BF2E2A', padding: '6px 10px 5px' }}>TOP SECRET · EYES ONLY</span>
@@ -410,9 +424,7 @@ export default class Page extends Component {
       <p style={{ margin: '26px 0 0', maxWidth: '30em', fontSize: 'clamp(17px, 2vw, 20px)', lineHeight: '1.5', color: '#202020', textWrap: 'pretty' }}>yes, you. the person paying five different companies $20 a month to summarize the same PDF.</p>
       </div>
       <div className="panel panel-3">
-      <div className="mirror" role="img" aria-label="A small mirror. The winner, reflected."><span className="mirror-word" aria-hidden="true">you.</span></div>
-      <p style={{ margin: '10px 0 0', fontFamily: 'var(--mono)', fontSize: '10.5px', letterSpacing: '0.12em', color: '#6B6863' }}>FIG. 1 — THE WINNER, PICTURED.</p>
-      <p style={{ margin: '28px 0 0', fontFamily: 'var(--serif)', fontStyle: 'italic', fontSize: 'clamp(24px, 3.2vw, 30px)', lineHeight: '1.2', textWrap: 'pretty' }}>turns out the real winner was the subscriptions we made along the way.</p>
+      <p style={{ margin: '0', fontFamily: 'var(--serif)', fontStyle: 'italic', fontSize: 'clamp(24px, 3.2vw, 30px)', lineHeight: '1.2', textWrap: 'pretty' }}>turns out the real winner was the subscriptions we made along the way.</p>
       <div style={{ display: 'flex', justifyContent: 'flex-end', marginTop: '26px' }}><span className="stamp slam slam-2" style={{ '--r': '-7deg', fontSize: '15px' }}>CASE CLOSED.</span></div>
       </div>
       </article>
@@ -454,14 +466,14 @@ export default class Page extends Component {
       <section className="after d2" style={{ maxWidth: '660px', margin: 'clamp(80px, 9vw, 112px) auto 0' }}>
       <p style={{ margin: '0 0 18px', fontFamily: 'var(--mono)', fontSize: '11px', letterSpacing: '0.16em', color: '#BF2E2A' }}>EXHIBIT B — APPROVED FOR PUBLIC RELEASE</p>
       <div className="record">
-      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: '12px', flexWrap: 'wrap', fontSize: '12px', letterSpacing: '0.1em' }}><span style={{ fontWeight: '500' }}>WHOWILLWINAIRACE.COM</span><span style={{ color: '#BF2E2A', border: '1px solid #BF2E2A', padding: '3px 7px 2px', fontSize: '10px', letterSpacing: '0.16em' }}>TOP SECRET</span></div>
+      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: '12px', flexWrap: 'wrap', fontSize: '12px', letterSpacing: '0.1em' }}><span style={{ fontWeight: '500' }}>WHOWILLWINTHEAIRACE.COM</span><span style={{ color: '#BF2E2A', border: '1px solid #BF2E2A', padding: '3px 7px 2px', fontSize: '10px', letterSpacing: '0.16em' }}>TOP SECRET</span></div>
       <div style={{ height: '1px', margin: '14px 0 16px', background: 'rgba(32, 32, 32, 0.2)' }}></div>
       <p style={{ margin: '0 0 12px', fontWeight: '600', fontSize: '15px', letterSpacing: '0.1em' }}>OFFICIAL PREDICTION RECORD</p>
       <div className="rrow"><span className="rlab">MY PICK</span><span className="rdots"></span><span className="rval">{v.pickUpper}</span></div>
       <div className="rrow"><span className="rlab">ACTUAL WINNER</span><span className="rdots"></span><span className="rval" style={{ color: '#BF2E2A' }}>ME</span></div>
-      <div className="rrow"><span className="rlab">REASON</span><span className="rdots"></span><span className="rval">$20/MONTH</span></div>
-      <div className="rrow"><span className="rlab">STATUS</span><span className="rdots"></span><span className="rval">FINANCIALLY CONFUSED</span></div>
-      <div style={{ display: 'flex', justifyContent: 'flex-end', marginTop: '18px' }}><span className="stamp rstamp">CASE CLOSED.</span></div>
+      <div className="rrow"><span className="rlab">REASON</span><span className="rdots"></span><span className="rval">{v.rec.reason}</span></div>
+      <div className="rrow"><span className="rlab">STATUS</span><span className="rdots"></span><span className="rval">{v.rec.status}</span></div>
+      <div style={{ display: 'flex', justifyContent: 'flex-end', marginTop: '18px' }}><span className="stamp rstamp">{v.rec.stamp}</span></div>
       </div>
       <div style={{ display: 'flex', flexWrap: 'wrap', gap: '12px', marginTop: '28px' }}>
       <button type="button" className="btn btn-solid" onClick={v.onShare} disabled={v.sharing}>{v.shareLabel}</button>
@@ -472,7 +484,7 @@ export default class Page extends Component {
       <img src={v.shareUrl} alt={v.shareAlt} width="1200" height="675" />
       <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
       <p style={{ margin: '0 0 4px', fontFamily: 'var(--mono)', fontSize: '12px', lineHeight: '1.6', color: '#4A4844' }}>evidence developed. 1200 × 675, sized for X.</p>
-      <a className="btn btn-solid" href={v.shareUrl} download="whowillwinairace-record.png">[ DOWNLOAD IMAGE ]</a>
+      <a className="btn btn-solid" href={v.shareUrl} download="whowillwintheairace-record.png">[ DOWNLOAD IMAGE ]</a>
       <a className="btn btn-ghost" href={v.xUrl} target="_blank" rel="noopener noreferrer">[ POST IT ON X ]</a>
       </div>
       </div>
@@ -496,7 +508,7 @@ export default class Page extends Component {
 
       <footer style={{ marginTop: 'clamp(110px, 12vw, 160px)', padding: '26px clamp(20px, 5vw, 64px) 40px', borderTop: '1px solid rgba(32, 32, 32, 0.16)', display: 'flex', flexDirection: 'column', gap: '12px', fontFamily: 'var(--mono)', fontSize: '11.5px', letterSpacing: '0.04em', color: '#6B6863' }}>
       <div style={{ display: 'flex', justifyContent: 'space-between', flexWrap: 'wrap', gap: '10px 32px' }}>
-      <span style={{ color: '#202020' }}>© 2026 WHOWILLWINAIRACE.COM</span>
+      <span style={{ color: '#202020' }}>© 2026 WHOWILLWINTHEAIRACE.COM</span>
       <span>internal memo: <button type="button" className={v.redactCls} onClick={v.onRedact} aria-label={v.redactLabel}>we also pay for all five.</button></span>
       </div>
       <p style={{ margin: '6px 0 0', fontFamily: 'var(--serif)', fontStyle: 'italic', fontSize: '19px', letterSpacing: '0', color: '#202020' }}>no AI companies were harmed in the making of this website. their valuations remain intact.</p>
