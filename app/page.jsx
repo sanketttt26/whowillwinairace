@@ -273,7 +273,12 @@ export default class Page extends Component {
         const pct = total ? Math.round(((s.tallies[o.id] || 0) * 100) / total) : 0;
         return { name: o.name, pct, label: pct + '%', fillCls: 'vfill' + (o.id === s.pick ? ' is-mine' : '') };
       }),
-      totalLabel: s.total === null ? '' : new Intl.NumberFormat('en-US').format(s.total) + (s.total === 1 ? ' OPINION ON FILE' : ' OPINIONS ON FILE'),
+      // Old-web hit counter: zero-padded digit tiles. Screen readers get the plain sentence instead.
+      counter: s.total === null ? null : {
+        digits: String(s.total).padStart(6, '0').split('').map((d, i, a) => ({ d, lead: d === '0' && a.slice(0, i + 1).every((x) => x === '0') && i < a.length - 1 })),
+        label: s.total === 1 ? 'OPINION ON FILE' : 'OPINIONS ON FILE',
+        spoken: new Intl.NumberFormat('en-US').format(s.total) + (s.total === 1 ? ' opinion on file' : ' opinions on file'),
+      },
       votesNote: s.boxDown
         ? 'ballot box unreachable. showing your ballot only. it is, as always, yours.'
         : s.limited ? 'too many new ballots from your network today. yours was noted, not counted.'
@@ -303,7 +308,11 @@ export default class Page extends Component {
       <header style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '12px 24px', padding: '22px clamp(20px, 5vw, 64px)', borderBottom: '1px solid rgba(32, 32, 32, 0.14)' }}>
       <span style={{ fontFamily: 'var(--mono)', fontSize: '13px', letterSpacing: '0.02em' }}>whowillwintheairace.com</span>
       <span style={{ display: 'flex', alignItems: 'center', flexWrap: 'wrap', gap: '10px 18px' }}>
-      {v.totalLabel && (<span style={{ fontFamily: 'var(--mono)', fontSize: '11px', fontWeight: '500', letterSpacing: '0.18em', color: '#4A4844', fontVariantNumeric: 'tabular-nums' }}>{v.totalLabel}</span>)}
+      {v.counter && (<span className="counter">
+      <span className="sr-only">{v.counter.spoken}</span>
+      <span className="odo" aria-hidden="true">{v.counter.digits.map((x, i) => (<span key={i} className={'odo-d' + (x.lead ? ' is-lead' : '')}><span key={x.d}>{x.d}</span></span>))}</span>
+      <span aria-hidden="true">{v.counter.label}</span>
+      </span>)}
       <span style={{ fontFamily: 'var(--mono)', fontSize: '11px', fontWeight: '500', letterSpacing: '0.18em', color: '#BF2E2A', border: '1px solid #BF2E2A', padding: '6px 10px 5px' }}>TOP SECRET · EYES ONLY</span>
       </span>
       </header>
